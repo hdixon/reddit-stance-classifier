@@ -2,6 +2,8 @@ import os
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from prediction import pred_lean
+from requests.exceptions import HTTPError
+
 
 app = Flask(__name__)
 
@@ -60,6 +62,8 @@ def success():
                 pred_stance = pred_lean(username)
             except ValueError as err:
                 return render_template("failure.html", error=str(err))
+            except HTTPError as err:
+                return render_template("failure.html", error='External API error')
 
             current_user = User(username, *pred_stance)
             db.session.add(current_user)
@@ -70,8 +74,8 @@ def success():
                                                 img=current_user.img(),
                                                 h_fullstance= 'left' if current_user.h_stance == 'L' else 'right',
                                                 v_fullstance= 'lib' if current_user.v_stance == 'L' else 'auth',
-                                                h_confidence=f'{current_user.h_confidence*100:.0f}%',
-                                                v_confidence=f'{current_user.v_confidence*100:.0f}%')
+                                                h_confidence=f'{current_user.h_confidence:.0%}',
+                                                v_confidence=f'{current_user.v_confidence:.0%}')
     elif request.method == 'GET':
         return redirect(url_for('index'))
 
